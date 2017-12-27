@@ -27,6 +27,16 @@ class EvaluationSpec extends WordSpec {
     }
   }
 
+  "Expression with nested parenthesis" should {
+    "return correct solution" in {
+      val expression1 = "(1+(2*3-1))+2"
+      val expression2 = "(1+(2*(3+2)))"
+
+      assert(Evaluation.solve(expression1) == Number("8"))
+      assert(Evaluation.solve(expression2) == Number("11"))
+    }
+  }
+
   "Expression from task" should {
     "return correct value" in {
       val expression = "(1-1)*2+3*(1-3+4)+10/2"

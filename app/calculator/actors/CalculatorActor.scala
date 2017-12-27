@@ -28,7 +28,7 @@ class CalculatorActorProvider @Inject()(system: ActorSystem) extends Provider[Ac
 
 case class EvaluationExpression(expression: ExpressionJson)
 
-case class EvaluationResult(result: String)
+case class EvaluationResult(result: Int)
 
 object EvaluationResult {
   implicit val format = Json.format[EvaluationResult]
