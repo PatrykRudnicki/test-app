@@ -53,17 +53,29 @@ object Evaluation {
       var stack = Array[Character]()
       var filteredExpression = Array[Character]()
       var isInParenthesis = false
+      var numberOfParenthesis = 0
 
       expression.map { elem =>
         elem match {
           case _: LeftParenthesis.type => {
+            if(numberOfParenthesis > 0) {
+              stack = stack :+ elem
+            }
+            numberOfParenthesis = numberOfParenthesis + 1
             isInParenthesis = true
           }
           case _: RightParenthesis.type => {
-            val solution = solveExpression(stack, Array(Operator("*"), Operator("/"), Operator("-"), Operator("+")))
-            stack = Array[Character]()
-            filteredExpression = filteredExpression :+ solution
-            isInParenthesis = false
+            if(numberOfParenthesis > 1) {
+              numberOfParenthesis = numberOfParenthesis - 1
+              stack = stack :+ elem
+            } else {
+              val checkedExp = solveParenthesis(stack)
+              val solution = solveExpression(checkedExp, Array(Operator("*"), Operator("/"), Operator("-"), Operator("+")))
+              stack = Array[Character]()
+              filteredExpression = filteredExpression :+ solution
+              numberOfParenthesis = 0
+              isInParenthesis = false
+            }
           }
           case _: Character if(isInParenthesis) => {
             stack = stack :+ elem
