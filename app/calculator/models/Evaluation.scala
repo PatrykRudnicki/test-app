@@ -35,7 +35,7 @@ sealed trait Character {
   }
 }
 sealed trait Operation {
-  def solve
+  def solve(): Number
 }
 
 case class Number(value: String) extends Character
@@ -72,7 +72,7 @@ case class Division(elem1: Number, elem2: Number) extends Operation {
 case class Error(value: String) extends Character
 
 case class IncorrectOperation(value: String) extends Operation {
-  override def solve(): Unit = {}
+  override def solve(): Number = Number("")
 }
 
 case class Expression(value: Array[Character])
