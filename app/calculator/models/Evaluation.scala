@@ -10,7 +10,9 @@ object Evaluation {
     val parsedString = expression.map{char =>
       matchChar(char.toString())
     }.toArray
-    solveExpression(parsedString, Array(Operator("*"), Operator("/"), Operator("+"), Operator("-")))
+    val checkedNumbers = checkNumbers(parsedString)
+    val checkedParenthesis = solveParenthesis(checkedNumbers)
+    solveExpression(checkedParenthesis, Array(Operator("*"), Operator("/"), Operator("-"), Operator("+")))
   }
 
   private def matchChar(char: String): Character = {
@@ -46,14 +48,41 @@ object Evaluation {
     filteredCharacters
   }
 
+  private def solveParenthesis(expression: Array[Character]): Array[Character] = {
+    if(expression.contains(LeftParenthesis) || expression.contains(RightParenthesis)){
+      var stack = Array[Character]()
+      var filteredExpression = Array[Character]()
+      var isInParenthesis = false
+
+      expression.map { elem =>
+        elem match {
+          case _: LeftParenthesis.type => {
+            isInParenthesis = true
+          }
+          case _: RightParenthesis.type => {
+            val solution = solveExpression(stack, Array(Operator("*"), Operator("/"), Operator("-"), Operator("+")))
+            stack = Array[Character]()
+            filteredExpression = filteredExpression :+ solution
+            isInParenthesis = false
+          }
+          case _: Character if(isInParenthesis) => {
+            stack = stack :+ elem
+          }
+          case _: Character => filteredExpression = filteredExpression :+ elem
+        }
+      }
+      filteredExpression
+    } else {
+      expression
+    }
+  }
+
   private def solveExpression(expression: Array[Character], operators: Array[Operator]): Number = {
     var stack = Array[Character]()
     var currentOperation = Operator("")
     var isOperation = false
 
-    val filteredExpression = checkNumbers(expression)
-
-    filteredExpression.map { elem =>
+    expression.map { elem =>
       elem match {
         case number: Number => {
           if(isOperation){

@@ -26,4 +26,12 @@ class EvaluationSpec extends WordSpec {
       assert(division.solve().value == Number("5").value)
     }
   }
+
+  "Expression from task" should {
+    "return correct value" in {
+      val expression = "(1-1)*2+3*(1-3+4)+10/2"
+
+      assert(Evaluation.solve(expression) == Number("11"))
+    }
+  }
 }
