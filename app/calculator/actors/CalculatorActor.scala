@@ -14,7 +14,8 @@ class CalculatorActor extends Actor {
   }
 
   private def calculateExpression(expression: String) = {
-    sender() ! EvaluationResult(expression)
+    val solution = Evaluation.solve(expression).value
+    sender() ! EvaluationResult(solution)
   }
 
 }

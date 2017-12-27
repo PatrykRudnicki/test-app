@@ -3,14 +3,13 @@ package calculator.models
 import org.scalatest.WordSpec
 
 class EvaluationSpec extends WordSpec {
-  "Evaluation" should {
-    "parse Json correctly" in {
-      val expressionJson = "1+1"
-      val parsedString: Array[Character] = Evaluation.parseString(expressionJson)
+  "Method solve" should {
+    "return correct solution of expression without parenthesis" in {
+      val expression1 = "15*3-10-20/10"
+      val expression2 = "15*3/3"
 
-      assert(parsedString(0) == Number("1"))
-      assert(parsedString(1) == Operator("+"))
-      assert(parsedString(2) == Number("1"))
+      assert(Evaluation.solve(expression1) == Number("33"))
+      assert(Evaluation.solve(expression2) == Number("15"))
     }
   }
 

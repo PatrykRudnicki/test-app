@@ -6,10 +6,11 @@ object Evaluation {
   val possibleOperations: Array[String] = Array("+", "-", "*", "/")
   val digits: Array[String] = Array("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
 
-  def parseString(expression: String): Array[Character] = {
-    expression.map{char =>
+  def solve(expression: String): Number = {
+    val parsedString = expression.map{char =>
       matchChar(char.toString())
     }.toArray
+    solveExpression(parsedString, Array(Operator("*"), Operator("/"), Operator("+"), Operator("-")))
   }
 
   private def matchChar(char: String): Character = {
@@ -21,9 +22,67 @@ object Evaluation {
       case value => Error("Incorrect value: " + value.toString)
     }
   }
-}
 
-sealed trait Character {
+  private def checkNumbers(characters: Array[Character]): Array[Character] = {
+    var stack = Array[Number]()
+    var filteredCharacters = Array[Character]()
+    characters.map{char: Character =>
+      char match {
+        case charValue: Number if(stack.length == 0) => stack = stack :+ charValue
+        case charValue: Number => {
+          filteredCharacters = filteredCharacters :+ Number(stack(0).value + charValue.value)
+          stack = Array[Number]()
+        }
+        case charValue => {
+          if(stack.length > 0) {
+            filteredCharacters = filteredCharacters :+ stack(0)
+          }
+          stack = Array[Number]()
+          filteredCharacters = filteredCharacters :+ charValue
+        }
+      }
+    }
+    filteredCharacters ++= stack
+    filteredCharacters
+  }
+
+  private def solveExpression(expression: Array[Character], operators: Array[Operator]): Number = {
+    var stack = Array[Character]()
+    var currentOperation = Operator("")
+    var isOperation = false
+
+    val filteredExpression = checkNumbers(expression)
+
+    filteredExpression.map { elem =>
+      elem match {
+        case number: Number => {
+          if(isOperation){
+            val solution = matchMatchOperator(stack(0).asInstanceOf[Number], currentOperation,elem.asInstanceOf[Number]).solve()
+            stack = stack.drop(1)
+            stack = stack.+:(solution)
+            isOperation = false
+          } else {
+            stack = stack.+:(number)
+          }
+        }
+        case operator: Operator => {
+          if(operator.value == operators(0).value) {
+            currentOperation = operator
+            isOperation = true
+          } else {
+            stack = stack.+:(operator)
+          }
+        }
+        case _ => ""
+      }
+    }
+    if(operators.length > 0){
+      solveExpression(stack.reverse, operators.tail)
+    } else {
+     stack(0).asInstanceOf[Number]
+    }
+  }
+
   def matchMatchOperator(elem1: Number, operator: Operator, elem2: Number): Operation = {
     operator.value match {
       case "+" => Addition(elem1, elem2)
@@ -34,6 +93,8 @@ sealed trait Character {
     }
   }
 }
+
+sealed trait Character
 sealed trait Operation {
   def solve(): Number
 }
