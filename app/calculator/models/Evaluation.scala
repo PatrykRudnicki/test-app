@@ -1,131 +1,79 @@
 package calculator.models
 
+import scala.annotation.tailrec
+
 object Evaluation {
   val possibleOperations: Array[String] = Array("+", "-", "*", "/")
   val digits: Array[String] = Array("0", "1", "2", "3", "4", "5", "6", "7", "8", "9")
   val operators: Array[Operator] = Array(Operator("*"), Operator("/"), Operator("-"), Operator("+"))
 
   def solve(expression: String): Number = {
-    val solution = parseExpression(expression)
+    val solution = parseExpression(expression.replaceAll(" ", ""))
     val checkedParenthesis = solveParenthesis(solution)
-    solveExpression(checkedParenthesis, operators)
+    solveExpression(checkedParenthesis)
   }
 
-  private def parseExpression(expression: String): Array[Character] = {
-    var stack = Array[String]()
-    var solution = Array[Character]()
-
-    def clearStack() = {
-      if(!stack.isEmpty){
-        solution = solution :+ Number(stack.mkString("").toInt)
-        stack = Array[String]()
-      }
-    }
-
-    expression.replaceAll(" ", "").map{ char =>
-      char.toString() match {
+  @tailrec
+  private def parseExpression(expression: String, solutions: Array[Character] = Array()): Array[Character] = {
+    if(expression.length == 0) {
+      solutions
+    } else {
+        expression.head.toString() match {
         case character if(digits.contains(character)) => {
-          stack = stack :+ character
+          val solution = Number(expression.takeWhile(char => char.isDigit).toInt)
+          parseExpression(expression.drop(solution.value.toString().length), solutions ++ Array(solution))
         }
-        case character if(possibleOperations.contains(character)) => {
-          clearStack()
-          solution = solution :+ Operator(character)
-        }
-        case "(" => {
-          clearStack()
-          solution = solution :+ LeftParenthesis
-        }
-        case ")" => {
-          clearStack()
-          solution = solution :+ RightParenthesis
-        }
+        case character if(possibleOperations.contains(character)) =>
+          parseExpression(expression.tail, solutions ++ Array(Operator(character)))
+        case "(" => parseExpression(expression.tail, solutions ++ Array(LeftParenthesis))
+        case ")" => parseExpression(expression.tail, solutions ++ Array(RightParenthesis))
       }
     }
-    clearStack()
-    solution
   }
 
+  @tailrec
   private def solveParenthesis(expression: Array[Character]): Array[Character] = {
-    if(expression.contains(LeftParenthesis) || expression.contains(RightParenthesis)){
-      var stack = Array[Character]()
-      var filteredExpression = Array[Character]()
-      var isInParenthesis = false
-      var numberOfParenthesis = 0
-
-      expression.map { elem =>
-        elem match {
-          case _: LeftParenthesis.type => {
-            if(numberOfParenthesis > 0) {
-              stack = stack :+ elem
-            }
-            numberOfParenthesis = numberOfParenthesis + 1
-            isInParenthesis = true
-          }
-          case _: RightParenthesis.type => {
-            if(numberOfParenthesis > 1) {
-              numberOfParenthesis = numberOfParenthesis - 1
-              stack = stack :+ elem
-            } else {
-              val checkedExp = solveParenthesis(stack)
-              val solution = solveExpression(checkedExp, operators)
-              stack = Array[Character]()
-              filteredExpression = filteredExpression :+ solution
-              numberOfParenthesis = 0
-              isInParenthesis = false
-            }
-          }
-          case _: Character if(isInParenthesis) => {
-            stack = stack :+ elem
-          }
-          case _: Character => filteredExpression = filteredExpression :+ elem
-        }
-      }
-      filteredExpression
+    if(expression.contains(LeftParenthesis)){
+      val leftIndex = expression.lastIndexOf(LeftParenthesis)
+      val rightIndex = expression.indexOf(RightParenthesis, leftIndex)
+      val solution = solveExpression(expression.drop(leftIndex + 1).dropRight(expression.length - rightIndex))
+      solveParenthesis(expression.take(leftIndex) ++ Array(solution) ++ expression.takeRight(expression.length - (rightIndex + 1)))
     } else {
       expression
     }
   }
 
-  private def solveExpression(expression: Array[Character], operators: Array[Operator]): Number = {
-    var stack = Array[Character]()
-    var currentOperation: Operator = null
-    var isOperation = false
-
-    expression.map { elem =>
-      elem match {
-        case number: Number => {
-          if(isOperation){
-            val solution = matchMatchOperator(stack(0).asInstanceOf[Number], currentOperation,elem.asInstanceOf[Number]).solve()
-            stack = stack.drop(1)
-            stack = stack.+:(solution)
-            isOperation = false
-          } else {
-            stack = stack.+:(number)
-          }
-        }
-        case operator: Operator => {
-          if(operator.value == operators(0).value) {
-            currentOperation = operator
-            isOperation = true
-          } else {
-            stack = stack.+:(operator)
-          }
-        }
-      }
-    }
-    if(operators.length > 0){
-      solveExpression(stack.reverse, operators.tail)
+  @tailrec
+  private def solveExpression(expression: Array[Character], operators: Array[Operator] = operators): Number = {
+    if(expression.length == 1) {
+      expression(0).asInstanceOf[Number]
     } else {
-     stack(0).asInstanceOf[Number]
+      if(expression.contains(operators.head)){
+        val index = expression.indexOf(operators.head)
+        val solution = matchOperator(expression(index - 1).asInstanceOf[Number], operators.head, expression(index + 1).asInstanceOf[Number])
+        if(expression.length > 4){
+          index match {
+            case _ if(index > 1 && index < expression.length - 3) =>
+              solveExpression(expression.take(index-1) ++ Array(solution) ++ expression.takeRight(expression.length - (index+2)), operators)
+            case _ if(index == 1) =>
+              solveExpression(Array(solution) ++ expression.takeRight(expression.length - (index+2)), operators)
+            case _ => solveExpression(expression.take(index-1) ++ Array(solution), operators)
+          }
+        } else {
+          solution.asInstanceOf[Number]
+        }
+      } else {
+        solveExpression(expression, operators.tail)
+      }
     }
   }
 
-  def matchMatchOperator(elem1: Number, operator: Operator, elem2: Number): Operation = {
+  def matchOperator(elem1: Number, operator: Operator, elem2: Number): Number = {
     operator.value match {
-      case "+" => Addition(elem1, elem2)
-      case "-" => Subtraction(elem1, elem2)
-      case "*" => Multiplication(elem1, elem2)
-      case "/" => Division(elem1, elem2)
+      case "+" => Addition(elem1, elem2).solve()
+      case "-" => Subtraction(elem1, elem2).solve()
+      case "*" => Multiplication(elem1, elem2).solve()
+      case "/" => Division(elem1, elem2).solve()
     }
   }
 }
